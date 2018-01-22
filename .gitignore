@@ -138,6 +138,7 @@ docs/_build/
 target/
 
 # Jupyter Notebook
+test*.ipynb
 
 # pyenv
 .python-version
