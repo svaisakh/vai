@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def _remove_outlier(data, threshold=3.5, window_fraction=0.3):
+def remove_outlier(data, threshold=3.5, window_fraction=0.3):
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm"""
 
     def __handle_args():
@@ -16,7 +16,7 @@ def _remove_outlier(data, threshold=3.5, window_fraction=0.3):
             raise ValueError('threshold should be a finite number but got {}'.format(threshold))
 
         if len(data.shape) == 1:
-            return _remove_outlier(np.expand_dims(data, -1), threshold, window_fraction)
+            return remove_outlier(np.expand_dims(data, -1), threshold, window_fraction)
     __handle_args()
 
     # Subdivide data into small windows
@@ -25,7 +25,7 @@ def _remove_outlier(data, threshold=3.5, window_fraction=0.3):
 
     split_data = np.split(data, divide_ids)
 
-    def __remove_outlier(x):
+    def _remove_outlier(x):
         outlier_factor = 0.6745
 
         median = np.median(x, axis=0)
@@ -38,4 +38,4 @@ def _remove_outlier(data, threshold=3.5, window_fraction=0.3):
 
         return x[~outlier_mask]
 
-    return np.vstack([__remove_outlier(d) for d in split_data])
+    return np.vstack([_remove_outlier(d) for d in split_data])
