@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def remove_outlier(data, threshold=3.5, window_fraction=0.3):
+def remove_outlier(data, threshold=3.5, window_fraction=0.3, return_mask=False):
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm"""
 
     def __handle_args():
@@ -17,6 +17,7 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.3):
 
         if len(data.shape) == 1:
             return remove_outlier(np.expand_dims(data, -1), threshold, window_fraction)
+
     __handle_args()
 
     # Subdivide data into small windows
@@ -36,6 +37,19 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.3):
 
         outlier_mask = modified_z_scores > threshold
 
-        return x[~outlier_mask]
+        if not return_mask:
+            return x[~outlier_mask]
 
-    return np.vstack([_remove_outlier(d) for d in split_data])
+        return x[~outlier_mask], outlier_mask
+
+    if not return_mask:
+        return np.vstack([_remove_outlier(d) for d in split_data])
+
+    filtered_data, outliers_mask = [], []
+
+    for d in split_data:
+        filtered_d, mask = _remove_outlier(d)
+        filtered_data.append(filtered_d)
+        outliers_mask.append(mask)
+
+    return np.vstack(filtered_data), np.concatenate(outliers_mask)
