@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from vai.plot import remove_outlier
+from vai.utils import remove_outlier
 
 
 class TestRemoveOutlier():
