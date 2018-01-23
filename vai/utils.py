@@ -1,7 +1,7 @@
 import numpy as np
 
 
-def remove_outlier(data, threshold=3.5, window_fraction=0.3, return_mask=False):
+def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False):
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm"""
 
     def __handle_args():
