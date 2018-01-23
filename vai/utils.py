@@ -5,6 +5,14 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm"""
 
     def __handle_args():
+        if len(data) == 0:
+            raise ValueError('data is empty!')
+        if len(data) < 3:
+            return data, [False] * len(data) if return_mask else data
+        if len(data.shape) == 1:
+            return remove_outlier(np.expand_dims(data, -1), threshold, window_fraction, return_mask)
+        if threshold is None:
+            raise ValueError('threshold cannot be None')
         if threshold < 0:
             raise ValueError('threshold should be non negative but got {}'.format(threshold))
         elif np.isinf(threshold) or np.isnan(threshold):
@@ -15,10 +23,9 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
         elif np.isinf(window_fraction) or np.isnan(window_fraction):
             raise ValueError('threshold should be a finite number but got {}'.format(threshold))
 
-        if len(data.shape) == 1:
-            return remove_outlier(np.expand_dims(data, -1), threshold, window_fraction)
-
-    __handle_args()
+    arg_err = __handle_args()
+    if arg_err is not None:
+        return arg_err
 
     # Subdivide data into small windows
     window_length = max(int(len(data) * window_fraction), 3) if window_fraction is not None else 3
@@ -33,6 +40,11 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
         distances = np.linalg.norm(x - median, axis=-1)
         median_deviation = np.median(distances)
 
+        # No deviation. All values are same. No outlier
+        if median_deviation == 0:
+            if not return_mask:
+                return x
+            return x, [False] * len(x)
         modified_z_scores = outlier_factor * distances / median_deviation
 
         outlier_mask = modified_z_scores > threshold
@@ -43,7 +55,7 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
         return x[~outlier_mask], outlier_mask
 
     if not return_mask:
-        return np.vstack([_remove_outlier(d) for d in split_data])
+        return np.concatenate([_remove_outlier(d) for d in split_data])
 
     filtered_data, outliers_mask = [], []
 
@@ -52,4 +64,4 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
         filtered_data.append(filtered_d)
         outliers_mask.append(mask)
 
-    return np.vstack(filtered_data), np.concatenate(outliers_mask)
+    return np.concatenate(filtered_data), np.concatenate(outliers_mask)
