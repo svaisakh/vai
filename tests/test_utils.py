@@ -4,7 +4,7 @@ import pytest
 from vai.utils import remove_outlier
 
 
-class TestRemoveOutlier():
+class TestRemoveOutlier:
     def test_data_can_be_1d(self):
         remove_outlier(np.zeros(5))
 
@@ -38,5 +38,4 @@ class TestRemoveOutlier():
     def test_window_not_greater_than_one(self):
         with pytest.raises(Exception):
             remove_outlier(np.zeros(5), window_fraction=2)
-
 
