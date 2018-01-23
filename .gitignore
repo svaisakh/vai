@@ -115,7 +115,8 @@ nosetests.xml
 coverage.xml
 *.cover
 .hypothesis/
-test_todo.py # TODO List
+
+test_todo.py
 
 # Translations
 *.mo
