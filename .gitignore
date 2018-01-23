@@ -116,6 +116,8 @@ coverage.xml
 *.cover
 .hypothesis/
 
+test_todo.py
+
 # Translations
 *.mo
 *.pot
