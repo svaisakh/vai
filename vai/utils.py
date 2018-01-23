@@ -21,7 +21,7 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
     __handle_args()
 
     # Subdivide data into small windows
-    window_length = int(len(data) * window_fraction)
+    window_length = max(int(len(data) * window_fraction), 3) if window_fraction is not None else 3
     divide_ids = np.arange(window_length, len(data), window_length)
 
     split_data = np.split(data, divide_ids)
