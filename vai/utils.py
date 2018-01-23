@@ -1,16 +1,16 @@
 import numpy as np
 
 
-def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False):
+def find_outliers(data, threshold=3.5, window_fraction=0.05):
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3/eda35h.htm"""
 
     def __handle_args():
         if len(data) == 0:
             raise ValueError('data is empty!')
         if len(data) < 3:
-            return data, [False] * len(data) if return_mask else data
+            return data, [False] * len(data)
         if len(data.shape) == 1:
-            return remove_outlier(np.expand_dims(data, -1), threshold, window_fraction, return_mask)
+            return find_outliers(np.expand_dims(data, -1), threshold, window_fraction)
         if threshold is None:
             raise ValueError('threshold cannot be None')
         if threshold < 0:
@@ -33,7 +33,7 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
 
     split_data = np.split(data, divide_ids)
 
-    def _remove_outlier(x):
+    def _find_outliers(x):
         outlier_factor = 0.6745
 
         median = np.median(x, axis=0)
@@ -42,26 +42,11 @@ def remove_outlier(data, threshold=3.5, window_fraction=0.05, return_mask=False)
 
         # No deviation. All values are same. No outlier
         if median_deviation == 0:
-            if not return_mask:
-                return x
-            return x, [False] * len(x)
+            return [False] * len(x)
         modified_z_scores = outlier_factor * distances / median_deviation
 
         outlier_mask = modified_z_scores > threshold
 
-        if not return_mask:
-            return x[~outlier_mask]
+        return outlier_mask
 
-        return x[~outlier_mask], outlier_mask
-
-    if not return_mask:
-        return np.concatenate([_remove_outlier(d) for d in split_data])
-
-    filtered_data, outliers_mask = [], []
-
-    for d in split_data:
-        filtered_d, mask = _remove_outlier(d)
-        filtered_data.append(filtered_d)
-        outliers_mask.append(mask)
-
-    return np.concatenate(filtered_data), np.concatenate(outliers_mask)
+    return np.concatenate([_find_outliers(d) for d in split_data])
