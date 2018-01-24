@@ -61,29 +61,32 @@ class TestSmoothen:
         with pytest.raises(ValueError):
             smoothen(np.array([]))
 
+    @given(st.integers(1, 100))
+    def test_cannot_send_illegal(self, length):
+        data = np.ones(length)
+        with pytest.raises(ValueError):
+            data[np.random.randint(0, len(data))] = np.nan
+            smoothen(data)
+
+        data = np.ones(length)
+        with pytest.raises(ValueError):
+            data[np.random.randint(0, len(data))] = np.inf
+            smoothen(data)
+
     @given(st.floats())
-    def test_fraction_is_fraction(self, window_fraction):
-        if 0 < window_fraction <= 1:
+    def test_window_fraction_is_fraction(self, window_fraction):
+        if 0 <= window_fraction <= 1:
             return
 
         with pytest.raises(ValueError):
             smoothen(np.zeros(5), window_fraction=window_fraction)
 
-    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, max_side=100)))
-    def test_polyorder_cannot_be_greater_than_or_equal_to_data_length(self, data):
-        polyorder = np.random.randint(len(data), len(data) * 2)
-        with pytest.raises(ValueError):
-            smoothen(data, polyorder=polyorder)
-
-    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=2, max_side=100)), st.floats(0, 1),
-           st.integers(0, 100))
-    def test_polyorder_cannot_be_greater_than_window_length(self, data, window_fraction, polyorder):
-        window_length = int(window_fraction * len(data))
+    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, max_side=100)), st.floats(0, 1), st.data())
+    def test_returns_same_shape(self, data, window_fraction, polyorder):
+        if np.any(np.isnan(data)) or np.any(np.isinf(data)):
+            return
+        window_length = int(len(data) * window_fraction)
         if window_length % 2 == 0:
             window_length = max(1, window_length - 1)
-
-        if polyorder <= window_length:
-            return
-
-        with pytest.raises(ValueError):
-            smoothen(data, window_fraction, polyorder)
+        polyorder = polyorder.draw(st.integers(0, window_length - 1))
+        assert smoothen(data, window_fraction, polyorder).shape == data.shape

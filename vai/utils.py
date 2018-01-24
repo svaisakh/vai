@@ -73,6 +73,8 @@ def smoothen(data, window_fraction=0.3, polyorder=3):
             raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
         if len(data) == 0:
             raise ValueError('data is empty!')
+        if np.any(np.isnan(data)) or np.any(np.isinf(data)):
+            raise ValueError('some of the data is either nan or inf')
 
         if type(window_fraction) is not float:
             raise TypeError('window_fraction should be a fraction (duh!). But got {}'.format(type(window_fraction)))
@@ -80,6 +82,11 @@ def smoothen(data, window_fraction=0.3, polyorder=3):
             raise ValueError('window_fraction should be a fraction (duh!). But got {}'.format(window_fraction))
         if np.isinf(window_fraction) or np.isnan(window_fraction):
             raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
+        if window_fraction < polyorder / len(data):
+            warnings.warn('window_fraction ({}) too low for polyorder ({}) and length ({}) of data. The minimum '
+                          'possible allowed is {}.\nReturning raw data'.format(window_fraction, polyorder, len(data),
+                                                                               polyorder / len(data)), RuntimeWarning)
+            return data
 
         if type(polyorder) is not int:
             raise TypeError('polyorder needs to be a non-negative integer but got {}'.format(type(polyorder)))
@@ -94,9 +101,5 @@ def smoothen(data, window_fraction=0.3, polyorder=3):
     # savgol_filter needs an odd window_length
     if window_length % 2 == 0:
         window_length = max(window_length - 1, 1)
-
-    if polyorder >= window_length:
-        raise ValueError('polyorder ({}) needs to be lower or window_frac ({}) needs to be higher'.format(polyorder,
-                                                                                                          window_fraction))
 
     return savgol_filter(data, window_length, polyorder)
