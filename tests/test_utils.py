@@ -52,7 +52,7 @@ class TestSmoothen:
             smoothen(np.zeros(5), None)
 
         with pytest.raises(TypeError):
-            smoothen(np.zeros(5), polyorder=None)
+            smoothen(np.zeros(5), order=None)
 
     def test_cannot_send_empty(self):
         with pytest.raises(ValueError):
@@ -82,11 +82,14 @@ class TestSmoothen:
             smoothen(np.zeros(5), window_fraction=window_fraction)
 
     @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, max_side=100)), st.floats(0, 1), st.data())
-    def test_returns_same_shape(self, data, window_fraction, polyorder):
+    def test_returns_same_shape(self, data, window_fraction, order):
         if np.any(np.isnan(data)) or np.any(np.isinf(data)):
             return
+
         window_length = int(len(data) * window_fraction)
         if window_length % 2 == 0:
             window_length = max(1, window_length - 1)
-        polyorder = polyorder.draw(st.integers(0, window_length - 1))
-        assert smoothen(data, window_fraction, polyorder).shape == data.shape
+
+        order = order.draw(st.integers(0, window_length - 1))
+
+        assert smoothen(data, window_fraction, order=order).shape == data.shape

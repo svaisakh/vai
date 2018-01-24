@@ -67,7 +67,9 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
     return np.concatenate([_find_outliers(d) for d in split_data])
 
 
-def smoothen(data, window_fraction=0.3, polyorder=3):
+def smoothen(data, window_fraction=0.3, **kwargs):
+    order = kwargs['order'] if 'order' in kwargs.keys() else 3
+
     def __handle_args():
         if type(data) is not np.ndarray and type(data) is not list:
             raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
@@ -82,16 +84,16 @@ def smoothen(data, window_fraction=0.3, polyorder=3):
             raise ValueError('window_fraction should be a fraction (duh!). But got {}'.format(window_fraction))
         if np.isinf(window_fraction) or np.isnan(window_fraction):
             raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
-        if window_fraction < polyorder / len(data):
+        if window_fraction < order / len(data):
             warnings.warn('window_fraction ({}) too low for polyorder ({}) and length ({}) of data. The minimum '
                           'possible allowed is {}.\nReturning raw data'.format(window_fraction, polyorder, len(data),
                                                                                polyorder / len(data)), RuntimeWarning)
             return data
 
-        if type(polyorder) is not int:
-            raise TypeError('polyorder needs to be a non-negative integer but got {}'.format(type(polyorder)))
-        if polyorder < 0:
-            raise ValueError('polyorder needs to be a non-negative integer but got {}'.format(polyorder))
+        if type(order) is not int:
+            raise TypeError('polyorder needs to be a non-negative integer but got {}'.format(type(order)))
+        if order < 0:
+            raise ValueError('polyorder needs to be a non-negative integer but got {}'.format(order))
 
     arg_err = __handle_args()
     if arg_err is not None:
@@ -102,4 +104,4 @@ def smoothen(data, window_fraction=0.3, polyorder=3):
     if window_length % 2 == 0:
         window_length = max(window_length - 1, 1)
 
-    return savgol_filter(data, window_length, polyorder)
+    return savgol_filter(data, window_length, order)
