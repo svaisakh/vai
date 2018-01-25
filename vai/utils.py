@@ -86,8 +86,8 @@ def smoothen(data, window_fraction=0.3, **kwargs):
             raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
         if window_fraction < order / len(data):
             warnings.warn('window_fraction ({}) too low for polyorder ({}) and length ({}) of data. The minimum '
-                          'possible allowed is {}.\nReturning raw data'.format(window_fraction, polyorder, len(data),
-                                                                               polyorder / len(data)), RuntimeWarning)
+                          'possible allowed is {}.\nReturning raw data'.format(window_fraction, order, len(data),
+                                                                               order / len(data)), RuntimeWarning)
             return data
 
         if type(order) is not int:
