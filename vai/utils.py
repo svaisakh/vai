@@ -106,6 +106,4 @@ def smoothen(data, window_fraction=0.3, **kwargs):
     if window_length % 2 == 0:
         window_length = max(window_length - 1, 1)
 
-    print(order, window_length)
-
     return savgol_filter(data, window_length, order)
