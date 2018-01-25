@@ -84,10 +84,12 @@ def smoothen(data, window_fraction=0.3, **kwargs):
             raise ValueError('window_fraction should be a fraction (duh!). But got {}'.format(window_fraction))
         if np.isinf(window_fraction) or np.isnan(window_fraction):
             raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
-        if window_fraction < order / len(data):
+
+        min_frac = order / len(data) if order % 2 == 0 else (order + 1) / len(data)
+        if window_fraction <= min_frac:
             warnings.warn('window_fraction ({}) too low for polyorder ({}) and length ({}) of data. The minimum '
                           'possible allowed is {}.\nReturning raw data'.format(window_fraction, order, len(data),
-                                                                               order / len(data)), RuntimeWarning)
+                                                                               min_frac), RuntimeWarning)
             return data
 
         if type(order) is not int:
@@ -103,5 +105,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
     # savgol_filter needs an odd window_length
     if window_length % 2 == 0:
         window_length = max(window_length - 1, 1)
+
+    print(order, window_length)
 
     return savgol_filter(data, window_length, order)
