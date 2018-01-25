@@ -12,7 +12,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
         if len(data) == 0:
             raise ValueError('data is empty!')
         if len(data) < 3:
-            return data, [False] * len(data)
+            return np.array([False] * len(data))
         if len(data.shape) == 1:
             return find_outliers(np.expand_dims(data, -1), threshold,
                                  window_fraction)
@@ -57,7 +57,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
 
         # No deviation. All values are same. No outlier
         if median_deviation == 0:
-            return [False] * len(x)
+            return np.array([False] * len(x))
         modified_z_scores = outlier_factor * distances / median_deviation
 
         outlier_mask = modified_z_scores > threshold
@@ -69,6 +69,16 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
 
 def smoothen(data, window_fraction=0.3, **kwargs):
     order = kwargs['order'] if 'order' in kwargs.keys() else 3
+    outlier_mask = kwargs['outlier_mask'] if 'outlier_mask' in kwargs.keys() else find_outliers
+
+    # Remove outliers
+    if outlier_mask is not None:
+        filter_idx = np.where(~outlier_mask(data))
+        if len(filter_idx) == 0:
+            warnings.warn('Data seems to be too wild or too sparse. Nothing remains after removing outliers.\nNot '
+                          'removing.', RuntimeWarning)
+        else:
+            data = data[filter_idx]
 
     def __handle_args():
         if type(data) is not np.ndarray and type(data) is not list:

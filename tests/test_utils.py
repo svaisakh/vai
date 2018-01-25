@@ -92,4 +92,4 @@ class TestSmoothen:
 
         order = order.draw(st.integers(0, window_length - 1))
 
-        assert smoothen(data, window_fraction, order=order).shape == data.shape
+        assert smoothen(data, window_fraction, order=order, outlier_mask=None).shape == data.shape
