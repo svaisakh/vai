@@ -2,6 +2,7 @@ import warnings
 
 import numpy as np
 from scipy.signal import savgol_filter
+from scipy import interpolate
 
 
 def find_outliers(data, threshold=3.5, window_fraction=0.05):
@@ -107,3 +108,14 @@ def smoothen(data, window_fraction=0.3, **kwargs):
         window_length = max(window_length - 1, 1)
 
     return savgol_filter(data, window_length, order)
+
+
+def __spline_interpolate(x, y, x_new, **kwargs):
+    s = kwargs.pop('s', 0)
+    k = kwargs.pop('k', 3)
+    extrapolate = kwargs.pop('extrapolate', False)
+
+    t, c, k = interpolate.splrep(x, y, s=s, k=k)
+    spline = interpolate.BSpline(t, c, k, extrapolate=extrapolate)
+
+    return spline(x_new)
