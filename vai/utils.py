@@ -68,7 +68,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
 
 
 def smoothen(data, window_fraction=0.3, **kwargs):
-    order = kwargs['order'] if 'order' in kwargs.keys() else 3
+    order = kwargs.pop('order', 3)
 
     def __handle_args():
         if type(data) is not np.ndarray and type(data) is not list:
