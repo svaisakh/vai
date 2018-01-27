@@ -92,17 +92,4 @@ class TestSmoothen:
 
         order = order.draw(st.integers(0, window_length - 1))
 
-        assert len(smoothen(data, window_fraction, order=order, outlier_mask=None)) == len(data)
-
-    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, max_side=100)), st.floats(0, 1), st.data())
-    def test_returns_less_or_equal_length_remove_outliers(self, data, window_fraction, order):
-        if np.any(np.isnan(data)) or np.any(np.isinf(data)):
-            return
-
-        window_length = int(len(data) * window_fraction)
-        if window_length % 2 == 0:
-            window_length = max(1, window_length - 1)
-
-        order = order.draw(st.integers(0, window_length - 1))
-
-        assert len(smoothen(data, window_fraction, order=order)) <= len(data)
+        assert len(smoothen(data, window_fraction, order=order)) == len(data)
