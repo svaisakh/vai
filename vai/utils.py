@@ -70,8 +70,11 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
 
 def smoothen(data, window_fraction=0.3, **kwargs):
     order = kwargs.pop('order', 3)
+    outlier_mask = kwargs.pop('outlier_mask', find_outliers)
+    interpolate_fn = kwargs.pop('interpolate_fn', __spline_interpolate)
 
     def __handle_args():
+        nonlocal data
         if type(data) is not np.ndarray and type(data) is not list:
             raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
         if len(data) == 0:
@@ -98,6 +101,17 @@ def smoothen(data, window_fraction=0.3, **kwargs):
         if order < 0:
             raise ValueError('polyorder needs to be a non-negative integer but got {}'.format(order))
 
+        # Replace Outliers
+        if outlier_mask is not None:
+            if interpolate_fn is None:
+                raise ValueError('if outlier_mask is not None, need interpolate_fn')
+
+            outliers = outlier_mask(data)
+            new_data = data.copy()
+            if len(np.where(outliers)[0]) != 0:
+                new_data[outliers] = interpolate_fn(np.where(~outliers)[0], data[~outliers], np.where(outliers)[0])
+                data = new_data
+
     arg_err = __handle_args()
     if arg_err is not None:
         return arg_err
@@ -113,7 +127,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
 def __spline_interpolate(x, y, x_new, **kwargs):
     s = kwargs.pop('s', 0)
     k = kwargs.pop('k', 3)
-    extrapolate = kwargs.pop('extrapolate', False)
+    extrapolate = kwargs.pop('extrapolate', True)
 
     t, c, k = interpolate.splrep(x, y, s=s, k=k)
     spline = interpolate.BSpline(t, c, k, extrapolate=extrapolate)
