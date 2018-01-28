@@ -45,9 +45,8 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
     # Subdivide data into small windows
     window_length = max(int(len(data) * window_fraction),
                         3) if window_fraction is not None else 3
-    divide_ids = np.arange(window_length, len(data), window_length)
 
-    split_data = np.split(data, divide_ids)
+    split_data = np.stack([data[i:i + window_length] for i in range(len(data) - window_length)])
 
     def _find_outliers(x):
         outlier_factor = 0.6745
@@ -65,7 +64,9 @@ def find_outliers(data, threshold=3.5, window_fraction=0.05):
 
         return outlier_mask
 
-    return np.concatenate([_find_outliers(d) for d in split_data])
+    outlier_idx = np.concatenate([np.arange(i, i + window_length)[_find_outliers(d)] for i, d in enumerate(split_data)])
+
+    return np.array([i in np.unique(outlier_idx) for i in range(len(data))])
 
 
 def smoothen(data, window_fraction=0.3, **kwargs):
