@@ -72,7 +72,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
 def smoothen(data, window_fraction=0.3, **kwargs):
     order = kwargs.pop('order', 3)
     outlier_mask = kwargs.pop('outlier_mask', find_outliers)
-    interpolate_fn = kwargs.pop('interpolate_fn', __spline_interpolate)
+    interpolate_fn = kwargs.pop('interpolate_fn', _spline_interpolate)
 
     def __handle_args():
         nonlocal data
@@ -124,7 +124,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
     return savgol_filter(data, window_length, order)
 
 
-def __spline_interpolate(x, y, x_new, **kwargs):
+def _spline_interpolate(x, y, x_new, **kwargs):
     s = kwargs.pop('s', 0)
     k = kwargs.pop('k', 3)
     extrapolate = kwargs.pop('extrapolate', True)

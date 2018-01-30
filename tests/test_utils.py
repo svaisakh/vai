@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 from hypothesis import given
 
-from vai.utils import find_outliers, smoothen
+# noinspection PyProtectedMember
+from vai.utils import find_outliers, smoothen, _spline_interpolate
 from hypothesis.extra import numpy as nph
 from hypothesis import strategies as st
 
@@ -93,3 +94,11 @@ class TestSmoothen:
         order = order.draw(st.integers(0, window_length - 1))
 
         assert len(smoothen(data, window_fraction, order=order)) == len(data)
+
+
+class TestPSplineInterpolate:
+    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=3)),
+           nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=3)),
+           nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1)))
+    def test_return_same_shape(self, x, y, x_new):
+        assert len(x_new) == len(_spline_interpolate(x, y, x_new).shape)
