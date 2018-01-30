@@ -27,20 +27,20 @@ class TestRemoveOutlier:
             find_outliers(np.zeros(5), -1)
 
     def test_threshold_not_none(self):
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             find_outliers(np.zeros(5), None)
 
     def test_threshold_not_inf(self):
         with pytest.raises(ValueError):
             find_outliers(np.zeros(5), np.inf)
 
-    def test_window_not_negative(self):
-        with pytest.raises(ValueError):
-            find_outliers(np.zeros(5), window_fraction=-1)
+    @given(st.floats())
+    def test_window_fraction_is_fraction(self, window_fraction):
+        if 0 <= window_fraction <= 1:
+            return
 
-    def test_window_not_greater_than_one(self):
         with pytest.raises(ValueError):
-            find_outliers(np.zeros(5), window_fraction=2)
+            find_outliers(np.zeros(5), window_fraction=window_fraction)
 
 
 class TestSmoothen:

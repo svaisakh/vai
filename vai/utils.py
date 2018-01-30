@@ -10,15 +10,24 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
     /eda35h.htm """
 
     def __handle_args():
+        if type(data) is not np.ndarray and type(data) is not list:
+            raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
         if len(data) == 0:
             raise ValueError('data is empty!')
-        if len(data) < 3:
-            return np.array([False] * len(data))
+        if np.any(np.isnan(data)) or np.any(np.isinf(data)):
+            raise ValueError('some of the data is either nan or inf')
         if len(data.shape) == 1:
-            return find_outliers(np.expand_dims(data, -1), threshold,
-                                 window_fraction)
-        if threshold is None:
-            raise ValueError('threshold cannot be None')
+            return find_outliers(np.expand_dims(data, -1), threshold, window_fraction)
+
+        if type(window_fraction) is not float:
+            raise TypeError('window_fraction should be a fraction (duh!). But got {}'.format(type(window_fraction)))
+        if window_fraction < 0 or window_fraction > 1:
+            raise ValueError('window_fraction should be a fraction (duh!). But got {}'.format(window_fraction))
+        if np.isinf(window_fraction) or np.isnan(window_fraction):
+            raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
+
+        if type(window_fraction) is not float:
+            raise TypeError('threshold should be a float. But got {}'.format(type(threshold)))
         if threshold < 0:
             raise ValueError(
                 'threshold should be non negative but got {}'.format(
@@ -28,25 +37,17 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
                 'threshold should be a finite number but got {}'.format(
                     threshold))
 
-        if window_fraction < 0 or window_fraction > 1:
-            raise ValueError(
-                'window_fraction should be a fraction (duh!). But got '
-                '{}'.format(
-                    window_fraction))
-        elif np.isinf(window_fraction) or np.isnan(window_fraction):
-            raise ValueError(
-                'threshold should be a finite number but got {}'.format(
-                    threshold))
-
     arg_err = __handle_args()
     if arg_err is not None:
         return arg_err
 
     # Subdivide data into small windows
-    window_length = max(int(len(data) * window_fraction),
-                        3) if window_fraction is not None else 3
+    window_length = max(int(len(data) * window_fraction), 1)
 
-    split_data = np.stack([data[i:i + window_length] for i in range(len(data) - window_length)])
+    if len(data) - window_length >= 1:
+        split_data = np.stack([data[i:i + window_length] for i in range(len(data) - window_length + 1)])
+    else:
+        split_data = np.expand_dims(data, 0)
 
     def _find_outliers(x):
         outlier_factor = 0.6745
@@ -65,7 +66,6 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
         return outlier_mask
 
     outlier_idx = np.concatenate([np.arange(i, i + window_length)[_find_outliers(d)] for i, d in enumerate(split_data)])
-
     return np.array([i in np.unique(outlier_idx) for i in range(len(data))])
 
 
@@ -109,7 +109,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
 
             outliers = outlier_mask(data)
             new_data = data.copy()
-            if len(np.where(outliers)[0]) != 0:
+            if len(np.where(outliers)[0]) != 0 and len(np.where(~outliers)[0]) > 1:
                 new_data[outliers] = interpolate_fn(np.where(~outliers)[0], data[~outliers], np.where(outliers)[0])
                 data = new_data
 
