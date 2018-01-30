@@ -90,17 +90,10 @@ def smoothen(data, window_fraction=0.3, **kwargs):
         if np.isinf(window_fraction) or np.isnan(window_fraction):
             raise ValueError('window_fraction should be a finite number but got {}'.format(window_fraction))
 
-        min_frac = order / len(data) if order % 2 == 0 else (order + 1) / len(data)
-        if window_fraction <= min_frac:
-            warnings.warn('window_fraction ({}) too low for polyorder ({}) and length ({}) of data. The minimum '
-                          'possible allowed is {}.\nReturning raw data'.format(window_fraction, order, len(data),
-                                                                               min_frac), RuntimeWarning)
-            return data
-
         if type(order) is not int:
-            raise TypeError('polyorder needs to be a non-negative integer but got {}'.format(type(order)))
+            raise TypeError('order needs to be a non-negative integer but got {}'.format(type(order)))
         if order < 0:
-            raise ValueError('polyorder needs to be a non-negative integer but got {}'.format(order))
+            raise ValueError('order needs to be a non-negative integer but got {}'.format(order))
 
         # Replace Outliers
         if outlier_mask is not None:
@@ -122,6 +115,12 @@ def smoothen(data, window_fraction=0.3, **kwargs):
     if window_length % 2 == 0:
         window_length = max(window_length - 1, 1)
 
+    if window_length <= order:
+        warnings.warn('window_fraction ({}) too low for order ({}) and length ({}) of data. The minimum '
+                      'possible allowed is {}.\nReturning raw data'.format(window_fraction, order, len(data),
+                                                                           min_frac), RuntimeWarning)
+        return data
+    
     return savgol_filter(data, window_length, order)
 
 
