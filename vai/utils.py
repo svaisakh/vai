@@ -116,11 +116,11 @@ def smoothen(data, window_fraction=0.3, **kwargs):
         window_length = max(window_length - 1, 1)
 
     if window_length <= order:
-        warnings.warn('window_fraction ({}) too low for order ({}) and length ({}) of data. The minimum '
-                      'possible allowed is {}.\nReturning raw data'.format(window_fraction, order, len(data),
-                                                                           min_frac), RuntimeWarning)
+        warnings.warn('window_fraction ({}) too low for order ({}) and length ({}) of data'.format(window_fraction,
+                                                                                                   order, len(data)),
+                      RuntimeWarning)
         return data
-    
+
     return savgol_filter(data, window_length, order)
 
 
