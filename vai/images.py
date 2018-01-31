@@ -1,4 +1,5 @@
 import numpy as np
+import itertools
 import matplotlib.pyplot as plt
 
 from scipy.misc import imresize
@@ -119,3 +120,57 @@ def _show_image(image, **kwargs):
 
     if not retain:
         plt.show()
+
+
+def _merge_images(images, shape='square'):
+    def _handle_args():
+        nonlocal shape
+
+        if type(shape) not in [str, tuple, list]:
+            raise TypeError('shape needs to be a string, tuple or list. Got {}'.format(type(shape)))
+        elif type(shape) is str:
+            if shape not in ['square', 'row', 'column']:
+                raise ValueError("shape needs to be one of 'square', 'row' or 'column'. Got {}".format(shape))
+            else:
+                if shape is 'square':
+                    def _square_factors(x):
+                        factor = [i for i in range(2, int(np.sqrt(x)) + 1) if x % i == 0][-1]
+                        return factor, x // factor
+
+                    shape = _square_factors(len(images))
+                elif shape is 'row':
+                    shape = (1, len(images))
+                elif shape is 'column':
+                    shape = (len(images), 1)
+        else:
+            if any(type(s) is not int or s <= 0 for s in shape):
+                raise ValueError('All shape elements need to be positive integers')
+
+        if type(images) not in (list, tuple):
+            if type(images) is np.ndarray:
+                if len(images.shape) != 4:
+                    raise ValueError('images needs to be a 4-D array. Got {} dimensions'.format(len(images.shape)))
+
+                return _merge_images(list(images), shape)
+            else:
+                raise TypeError('images needs to be a list, tuple or numpy array. Got {}'.format(type(images)))
+
+        if len(images) != np.prod(shape):
+            raise ValueError('Shape mismatch. Got shape {} but images are {} long'.format(shape, len(images)))
+
+        if any(np.std([image.shape for image in images], 0) != 0):
+            raise ValueError('All images need to be of the same shape')
+
+    err_arg = _handle_args()
+    if err_arg is not None:
+        return err_arg
+
+    img_shape = np.array(images[0].shape[:-1])
+    merged_image = np.zeros(np.append(img_shape * np.array(shape), 3))
+
+    # noinspection PyTypeChecker
+    for idx, (row, column) in enumerate(list(itertools.product(range(shape[0]), range(shape[1])))):
+        merged_image[row * img_shape[0]:(row + 1) * img_shape[0],
+                     column * img_shape[1]:(column + 1) * img_shape[1], :] = images[idx]
+
+    return merged_image
