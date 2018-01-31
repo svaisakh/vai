@@ -1,8 +1,77 @@
 import numpy as np
 import itertools
 import matplotlib.pyplot as plt
+import os
 
 from scipy.misc import imresize
+
+
+def show_images(images, **kwargs):
+    titles = kwargs.pop('titles', None)
+    pixel_range = kwargs.pop('pixel_range', (0, 255))
+    cmap = kwargs.pop('cmap', None)
+    shape = kwargs.pop('shape', 'square')
+    resize = 'smean'
+    merge = kwargs.pop('merge', True)
+    retain = kwargs.pop('retain', False)
+    savepath = kwargs.pop('savepath', None)
+
+    def _handle_args():
+        nonlocal images, shape, resize
+
+        if type(images) not in (list, tuple, np.ndarray, str):
+            raise TypeError('images needs to be a list, tuple, string or numpy array. Got {}'.format(type(images)))
+        elif type(images) is str:
+            from glob import glob
+            images = [plt.imread(f) for f in glob(images, recursive=True)]
+        elif type(images) is np.ndarray:
+            images = list(images)
+
+        resize = 'min' if len(images) == 1 else resize
+        resize = kwargs.pop('resize', resize)
+
+        if type(images) in (list, tuple):
+            if any(type(image) is not np.ndarray for image in images):
+                raise TypeError('All images need to be numpy arrays')
+
+        if type(merge) is not bool:
+            raise TypeError('merge needs to be either true or false. Got {}'.format(type(merge)))
+
+        if titles is not None and type(titles) not in (list, tuple, str):
+            raise TypeError('title needs to be a string or a list or tuple of strings. Got {}'.format(type(titles)))
+        elif type(titles) is str:
+            if not merge:
+                raise TypeError('Given a single title, merge should be True.'
+                                '\nElse give a list of titles.')
+        elif titles is not None:
+            if merge:
+                raise TypeError('Given a list of titles, merge should be False.'
+                                '\nElse give a single title or leave it None.')
+
+        if savepath is not None:
+            if type(savepath) is not str:
+                raise TypeError('savepath needs to be a string')
+            os.makedirs(os.path.split(savepath)[0], exist_ok=True)
+
+        shape = _resolve_merge_shape(len(images), shape)
+
+    err_arg = _handle_args()
+    if err_arg is not None:
+        return err_arg
+
+    images = _resize_images(_colorize_images(images), shape=resize)
+    if not merge:
+        fig, axes = plt.subplots(shape[0], shape[1])
+        for i, ax in enumerate(axes.flat):
+            _show_image(images[i], title=titles[i], pixel_range=pixel_range, cmap=cmap, ax=ax, retain=True)
+    else:
+        _show_image(_merge_images(images, shape), title=titles, pixel_range=pixel_range, cmap=cmap, retain=True)
+
+    if not retain:
+        plt.show()
+
+    if savepath is not None:
+        plt.savefig(savepath, dpi=400, bbox_inches='tight')
 
 
 def _colorize_images(images):
@@ -126,26 +195,6 @@ def _merge_images(images, shape='square'):
     def _handle_args():
         nonlocal shape
 
-        if type(shape) not in [str, tuple, list]:
-            raise TypeError('shape needs to be a string, tuple or list. Got {}'.format(type(shape)))
-        elif type(shape) is str:
-            if shape not in ['square', 'row', 'column']:
-                raise ValueError("shape needs to be one of 'square', 'row' or 'column'. Got {}".format(shape))
-            else:
-                if shape is 'square':
-                    def _square_factors(x):
-                        factor = [i for i in range(2, int(np.sqrt(x)) + 1) if x % i == 0][-1]
-                        return factor, x // factor
-
-                    shape = _square_factors(len(images))
-                elif shape is 'row':
-                    shape = (1, len(images))
-                elif shape is 'column':
-                    shape = (len(images), 1)
-        else:
-            if any(type(s) is not int or s <= 0 for s in shape):
-                raise ValueError('All shape elements need to be positive integers')
-
         if type(images) not in (list, tuple):
             if type(images) is np.ndarray:
                 if len(images.shape) != 4:
@@ -154,6 +203,8 @@ def _merge_images(images, shape='square'):
                 return _merge_images(list(images), shape)
             else:
                 raise TypeError('images needs to be a list, tuple or numpy array. Got {}'.format(type(images)))
+
+        shape = _resolve_merge_shape(len(images), shape)
 
         if len(images) != np.prod(shape):
             raise ValueError('Shape mismatch. Got shape {} but images are {} long'.format(shape, len(images)))
@@ -171,6 +222,34 @@ def _merge_images(images, shape='square'):
     # noinspection PyTypeChecker
     for idx, (row, column) in enumerate(list(itertools.product(range(shape[0]), range(shape[1])))):
         merged_image[row * img_shape[0]:(row + 1) * img_shape[0],
-                     column * img_shape[1]:(column + 1) * img_shape[1], :] = images[idx]
+        column * img_shape[1]:(column + 1) * img_shape[1], :] = images[idx]
 
     return merged_image
+
+
+def _resolve_merge_shape(num_images, shape):
+    if type(shape) not in [str, tuple, list]:
+        raise TypeError('shape needs to be a string, tuple or list. Got {}'.format(type(shape)))
+    elif type(shape) is str:
+        if shape not in ['square', 'row', 'column']:
+            raise ValueError("shape needs to be one of 'square', 'row' or 'column'. Got {}".format(shape))
+        else:
+            if shape is 'square':
+                def _square_factors(x):
+                    if x == 1:
+                        return 1, 1
+                    if x == 2:
+                        return 2, 1
+                    factor = [i for i in range(2, int(np.sqrt(x)) + 1) if x % i == 0][-1]
+                    return factor, x // factor
+
+                return _square_factors(num_images)
+            elif shape is 'row':
+                return 1, num_images
+            elif shape is 'column':
+                return num_images, 1
+    else:
+        if any(type(s) is not int or s <= 0 for s in shape):
+            raise ValueError('All shape elements need to be positive integers')
+
+    return shape
