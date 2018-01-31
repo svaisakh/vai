@@ -97,8 +97,12 @@ class TestSmoothen:
 
 
 class TestPSplineInterpolate:
-    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=3)),
-           nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=3)),
+    @given(nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1, min_side=4), unique=True),
+           st.data(),
            nph.arrays(nph.floating_dtypes(), nph.array_shapes(max_dims=1)))
     def test_return_same_shape(self, x, y, x_new):
-        assert len(x_new) == len(_spline_interpolate(x, y, x_new).shape)
+        y = y.draw(nph.arrays(nph.floating_dtypes(), x.shape))
+        if np.any(np.isinf(x)) or np.any(np.isnan(x)) or np.any(np.isinf(y)) or np.any(np.isnan(y)):
+            return
+
+        assert len(x_new) == len(_spline_interpolate(x, y, x_new))

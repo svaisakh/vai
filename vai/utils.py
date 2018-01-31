@@ -9,7 +9,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
     """Based on http://www.itl.nist.gov/div898/handbook/eda/section3
     /eda35h.htm """
 
-    def __handle_args():
+    def _handle_args():
         if type(data) is not np.ndarray and type(data) is not list:
             raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
         if len(data) == 0:
@@ -37,7 +37,7 @@ def find_outliers(data, threshold=3.5, window_fraction=0.15):
                 'threshold should be a finite number but got {}'.format(
                     threshold))
 
-    arg_err = __handle_args()
+    arg_err = _handle_args()
     if arg_err is not None:
         return arg_err
 
@@ -74,7 +74,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
     outlier_mask = kwargs.pop('outlier_mask', find_outliers)
     interpolate_fn = kwargs.pop('interpolate_fn', _spline_interpolate)
 
-    def __handle_args():
+    def _handle_args():
         nonlocal data
         if type(data) is not np.ndarray and type(data) is not list:
             raise TypeError('data needs to be a list or numpy array. Got {}'.format(type(data)))
@@ -82,6 +82,8 @@ def smoothen(data, window_fraction=0.3, **kwargs):
             raise ValueError('data is empty!')
         if np.any(np.isnan(data)) or np.any(np.isinf(data)):
             raise ValueError('some of the data is either nan or inf')
+        if len(data.shape) > 1:
+            raise ValueError('data needs to be 1-dimensional for now')
 
         if type(window_fraction) is not float:
             raise TypeError('window_fraction should be a fraction (duh!). But got {}'.format(type(window_fraction)))
@@ -106,7 +108,7 @@ def smoothen(data, window_fraction=0.3, **kwargs):
                 new_data[outliers] = interpolate_fn(np.where(~outliers)[0], data[~outliers], np.where(outliers)[0])
                 data = new_data
 
-    arg_err = __handle_args()
+    arg_err = _handle_args()
     if arg_err is not None:
         return arg_err
 
@@ -116,8 +118,8 @@ def smoothen(data, window_fraction=0.3, **kwargs):
         window_length = max(window_length - 1, 1)
 
     if window_length <= order:
-        warnings.warn('window_fraction ({}) too low for order ({}) and length ({}) of data'.format(window_fraction,
-                                                                                                   order, len(data)),
+        warnings.warn('window_fraction ({}) too low for order ({}) and length ({}) of data'
+                      '\nReturning raw data'.format(window_fraction, order, len(data)),
                       RuntimeWarning)
         return data
 
@@ -128,6 +130,39 @@ def _spline_interpolate(x, y, x_new, **kwargs):
     s = kwargs.pop('s', 0)
     k = kwargs.pop('k', 3)
     extrapolate = kwargs.pop('extrapolate', True)
+
+    def _handle_args():
+        nonlocal x, y
+        if type(s) is not int:
+            raise ValueError('s needs to be an integer')
+        if type(k) is not int:
+            raise ValueError('k needs to be an integer')
+        if type(extrapolate) is not bool:
+            raise ValueError('extrapolate needs to be either True or False')
+
+        if type(x) is not np.ndarray and type(x) is not list:
+            raise TypeError('x needs to be a list or numpy array. Got {}'.format(type(x)))
+        if len(x) <= k:
+            raise ValueError('x needs to be at least k ({}) long'.format(k))
+        if np.any(np.isnan(x)) or np.any(np.isinf(x)):
+            raise ValueError('some of x is either nan or inf')
+
+        if type(y) is not np.ndarray and type(y) is not list:
+            raise TypeError('y needs to be a list or numpy array. Got {}'.format(type(y)))
+        if len(x) != len(y):
+            raise ValueError('Both x and y should be of the same length.'
+                             'Got {} and {} respectively'.format(len(x), len(y)))
+        if np.any(np.isnan(y)) or np.any(np.isinf(y)):
+            raise ValueError('some of y is either nan or inf')
+
+        # Sort the data in ascending order
+        order_idx = np.argsort(x)
+        x = x[order_idx]
+        y = y[order_idx]
+
+    err_arg = _handle_args()
+    if err_arg is not None:
+        return err_arg
 
     t, c, k = interpolate.splrep(x, y, s=s, k=k)
     spline = interpolate.BSpline(t, c, k, extrapolate=extrapolate)
