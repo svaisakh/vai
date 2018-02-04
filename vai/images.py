@@ -17,7 +17,7 @@ def show_images(images, **kwargs):
     savepath = kwargs.pop('savepath', None)
 
     def _handle_args():
-        nonlocal images, shape, resize
+        nonlocal images, pixel_range, shape, resize
 
         if type(images) not in (list, tuple, np.ndarray, str):
             raise TypeError('images needs to be a list, tuple, string or numpy array. Got {}'.format(type(images)))
@@ -27,12 +27,24 @@ def show_images(images, **kwargs):
         elif type(images) is np.ndarray:
             images = list(images)
 
-        resize = 'min' if len(images) == 1 else resize
-        resize = kwargs.pop('resize', resize)
-
-        if type(images) in (list, tuple):
+        elif type(images) in (list, tuple):
             if any(type(image) is not np.ndarray for image in images):
                 raise TypeError('All images need to be numpy arrays')
+
+        if type(pixel_range) not in [tuple, list, np.ndarray]:
+            if type(pixel_range) is str:
+                if pixel_range == 'auto':
+                    pixel_range = (min([image.min() for image in images]), max([image.max() for image in images]))
+                else:
+                    raise ValueError('pixel_range should be auto. Found {}'.format(pixel_range))
+            else:
+                raise TypeError("pixel_range needs to be a tuple, list, numpy array or 'auto'."
+                                " Found {}".format(type(pixel_range)))
+        elif len(pixel_range) != 2:
+            raise ValueError('pixel_range needs to be of size 2 - (min, max). Found size {}'.format(len(pixel_range)))
+
+        resize = 'min' if len(images) == 1 else resize
+        resize = kwargs.pop('resize', resize)
 
         if type(merge) is not bool:
             raise TypeError('merge needs to be either true or false. Got {}'.format(type(merge)))
@@ -59,13 +71,15 @@ def show_images(images, **kwargs):
     if err_arg is not None:
         return err_arg
 
-    images = _resize_images(_colorize_images(images), shape=resize)
+    images = _colorize_images(images)
+    images = [(image - pixel_range[0]) / (pixel_range[1] - pixel_range[0]) for image in images]
+    images = _resize_images(images, shape=resize)
     if not merge:
         fig, axes = plt.subplots(shape[0], shape[1])
         for i, ax in enumerate(axes.flat):
-            _show_image(images[i], title=titles[i], pixel_range=pixel_range, cmap=cmap, ax=ax, retain=True)
+            _show_image(images[i], title=titles[i], cmap=cmap, ax=ax, retain=True)
     else:
-        _show_image(_merge_images(images, shape), title=titles, pixel_range=pixel_range, cmap=cmap, retain=True)
+        _show_image(_merge_images(images, shape), title=titles, cmap=cmap, retain=True)
 
     if not retain:
         plt.show()
@@ -143,13 +157,12 @@ def _resize_images(images, shape='smean', interp='bilinear', mode=None):
 
 def _show_image(image, **kwargs):
     title = kwargs.pop('title', None)
-    pixel_range = kwargs.pop('pixel_range', (0, 255))
     cmap = kwargs.pop('cmap', None)
     ax = kwargs.pop('ax', None)
     retain = kwargs.pop('retain', False)
 
     def _handle_args():
-        nonlocal pixel_range, ax
+        nonlocal ax
         if type(image) is not np.ndarray:
             raise TypeError('image needs to be a numpy array. Found {}'.format(type(image)))
         if len(image.shape) not in (2, 3):
@@ -157,18 +170,6 @@ def _show_image(image, **kwargs):
 
         if title is not None and type(title) is not str:
             raise TypeError('title needs to be None or a valid string. Found {}'.format(title))
-
-        if type(pixel_range) not in [tuple, list, np.ndarray]:
-            if type(pixel_range) is str:
-                if pixel_range == 'auto':
-                    pixel_range = (image.min(), image.max())
-                else:
-                    raise ValueError('pixel_range should be auto. Found {}'.format(pixel_range))
-            else:
-                raise TypeError("pixel_range needs to be a tuple, list, numpy array or 'auto'."
-                                " Found {}".format(type(pixel_range)))
-        elif len(pixel_range) != 2:
-            raise ValueError('pixel_range needs to be of size 2 - (min, max). Found size {}'.format(len(pixel_range)))
 
         if ax is None:
             ax = plt.subplots()[1]
@@ -180,7 +181,7 @@ def _show_image(image, **kwargs):
     if err_arg is not None:
         return err_arg
 
-    ax.imshow(((image - pixel_range[0]) / (pixel_range[1] - pixel_range[0])), cmap, vmin=0, vmax=1, **kwargs)
+    ax.imshow(image.astype(np.uint8), cmap, **kwargs)
     if title is not None:
         ax.set_title(title)
     ax.set_xticks([])
