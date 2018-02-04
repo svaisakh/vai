@@ -162,11 +162,13 @@ def _show_image(image, **kwargs):
     retain = kwargs.pop('retain', False)
 
     def _handle_args():
-        nonlocal ax
+        nonlocal image, ax
         if type(image) is not np.ndarray:
             raise TypeError('image needs to be a numpy array. Found {}'.format(type(image)))
         if len(image.shape) not in (2, 3):
             raise ValueError('invalid image dimensions. Needs to be 2 or 3-D. Found {}'.format(len(image.shape)))
+        elif len(image.shape) == 3 and np.all(image[:, :, 0] == image[:, :, 1]) and np.all(image[:, :, 1] == image[:, :, 2]):
+            image = image[:, :, 0]
 
         if title is not None and type(title) is not str:
             raise TypeError('title needs to be None or a valid string. Found {}'.format(title))
@@ -240,9 +242,12 @@ def _resolve_merge_shape(num_images, shape):
                     if x == 1:
                         return 1, 1
                     if x == 2:
-                        return 2, 1
-                    factor = [i for i in range(2, int(np.sqrt(x)) + 1) if x % i == 0][-1]
-                    return factor, x // factor
+                        return 1, 2
+                    factors = [i for i in range(2, int(np.sqrt(x)) + 1) if x % i == 0]
+                    if len(factors) == 0:
+                        return 1, x
+
+                    return factors[-1], x // factors[-1]
 
                 return _square_factors(num_images)
             elif shape is 'row':
