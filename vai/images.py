@@ -77,6 +77,7 @@ def show_images(images, **kwargs):
         fig, axes = plt.subplots(shape[0], shape[1])
         for i, ax in enumerate(axes.flat):
             _show_image(images[i], title=titles[i], cmap=cmap, ax=ax, retain=True)
+        fig.tight_layout()
     else:
         _show_image(_merge_images(images, shape), title=titles, cmap=cmap, retain=True)
 
@@ -166,7 +167,8 @@ def _show_image(image, **kwargs):
             raise TypeError('image needs to be a numpy array. Found {}'.format(type(image)))
         if len(image.shape) not in (2, 3):
             raise ValueError('invalid image dimensions. Needs to be 2 or 3-D. Found {}'.format(len(image.shape)))
-        elif len(image.shape) == 3 and np.all(image[:, :, 0] == image[:, :, 1]) and np.all(image[:, :, 1] == image[:, :, 2]):
+        elif len(image.shape) == 3 and np.all(image[:, :, 0] == image[:, :, 1]) and\
+                np.all(image[:, :, 1] == image[:, :, 2]):
             image = image[:, :, 0]
 
         if title is not None and type(title) is not str:
@@ -224,7 +226,7 @@ def _merge_images(images, shape='square'):
     # noinspection PyTypeChecker
     for idx, (row, column) in enumerate(list(itertools.product(range(shape[0]), range(shape[1])))):
         merged_image[row * img_shape[0]:(row + 1) * img_shape[0],
-        column * img_shape[1]:(column + 1) * img_shape[1], :] = images[idx]
+                     column * img_shape[1]:(column + 1) * img_shape[1], :] = images[idx]
 
     return merged_image
 
