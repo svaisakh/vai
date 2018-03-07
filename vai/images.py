@@ -18,7 +18,6 @@ def show_images(images, **kwargs):
 
     def _handle_args():
         nonlocal images, pixel_range, shape, resize
-
         if type(images) not in (list, tuple, np.ndarray, str):
             raise TypeError('images needs to be a list, tuple, string or numpy array. Got {}'.format(type(images)))
         elif type(images) is str:
@@ -188,7 +187,7 @@ def _show_image(image, **kwargs):
         ax.set_title(title)
     ax.set_xticks([])
     ax.set_yticks([])
-    ax.grid('off')
+    ax.grid(False)
 
     if not retain:
         plt.show()
