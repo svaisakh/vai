@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # noinspection PyProtectedMember
-from utils import smoothen, _spline_interpolate, find_outliers
+from vai.utils import smoothen, _spline_interpolate, find_outliers
 
 
 def smooth_plot(*args, **kwargs):
